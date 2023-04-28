@@ -45,6 +45,37 @@ class _MyAppState extends State<MyApp> {
     setState(() {
       _platformVersion = platformVersion;
     });
+
+    var address = '';
+    var done = false;
+
+    Future.microtask(() async {
+      final bondingFuture = _bleBondingPlugin.bond(address);
+
+      Future.microtask(() async {
+        await for (final state in _bleBondingPlugin.bondingStateStream) {
+          debugPrint('State is $state, from stream.');
+          if (state == BleBondingState.bonded) break;
+        }
+        debugPrint('BONDED, in stream.');
+      });
+
+      await bondingFuture;
+      debugPrint('BONDED, after await.');
+    });
+
+
+    while (!done) {
+      final state = await _bleBondingPlugin.getBondingState(address);
+      debugPrint('State is $state, in loop.');
+
+      if (state == BleBondingState.bonded) {
+        debugPrint('BONDED, in loop.');
+        break;
+      }
+
+      await Future.delayed(const Duration(seconds: 1));
+    }
   }
 
   @override
