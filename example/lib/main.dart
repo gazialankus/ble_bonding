@@ -53,7 +53,8 @@ class _MyAppState extends State<MyApp> {
       final bondingFuture = _bleBondingPlugin.bond(address);
 
       Future.microtask(() async {
-        await for (final state in _bleBondingPlugin.bondingStateStream) {
+        await for (final state
+            in _bleBondingPlugin.getBondingStateStream(address)) {
           debugPrint('State is $state, from stream.');
           if (state == BleBondingState.bonded) break;
         }

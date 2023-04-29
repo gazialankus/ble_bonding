@@ -12,7 +12,7 @@ class BleBonding {
     return BleBondingPlatform.instance.getPlatformVersion();
   }
 
-  Stream<BleBondingState> get bondingStateStream async* {
+  Stream<BleBondingState> getBondingStateStream(String address) async* {
     var localState = tmpState;
     yield localState;
     while (localState != BleBondingState.bonded) {
