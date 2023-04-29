@@ -30,4 +30,8 @@ abstract class BleBondingPlatform extends PlatformInterface {
   Future<void> bond(String address) async {
     throw UnimplementedError('bond() has not been implemented.');
   }
+
+  Future<int?> getBondingState(String address) async {
+    throw UnimplementedError('getBondingState() has not been implemented.');
+  }
 }

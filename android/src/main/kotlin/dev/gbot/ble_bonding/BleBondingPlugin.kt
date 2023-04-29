@@ -12,18 +12,22 @@ import androidx.annotation.NonNull
 import androidx.annotation.RequiresApi
 
 import io.flutter.embedding.engine.plugins.FlutterPlugin
+import io.flutter.plugin.common.EventChannel
+import io.flutter.plugin.common.EventChannel.EventSink
+import io.flutter.plugin.common.EventChannel.StreamHandler
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
 
 /** BleBondingPlugin */
-class BleBondingPlugin: FlutterPlugin, MethodCallHandler {
+class BleBondingPlugin: FlutterPlugin, MethodCallHandler, StreamHandler {
   /// The MethodChannel that will the communication between Flutter and native Android
   ///
   /// This local reference serves to register the plugin with the Flutter Engine and unregister it
   /// when the Flutter Engine is detached from the Activity
   private lateinit var channel : MethodChannel
+  private lateinit var eventChannel: EventChannel
   private lateinit var mBluetoothAdapter: BluetoothAdapter
   private lateinit var applicationContext: Context
   val channelResultForAddress = LinkedHashMap<String, Result>()
@@ -31,6 +35,9 @@ class BleBondingPlugin: FlutterPlugin, MethodCallHandler {
   override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
     channel = MethodChannel(flutterPluginBinding.binaryMessenger, "ble_bonding")
     channel.setMethodCallHandler(this)
+
+    eventChannel = EventChannel(flutterPluginBinding.binaryMessenger, "ble_bonding_state_stream")
+    eventChannel.setStreamHandler(stateStreamHandler)
 
     applicationContext = flutterPluginBinding.applicationContext
 
@@ -110,4 +117,15 @@ class BleBondingPlugin: FlutterPlugin, MethodCallHandler {
       }
     }
   }
+
+  private val stateStreamHandler: StreamHandler = object: StreamHandler {
+    override fun onListen(p0: Any?, stateEventSink: EventSink) {
+    }
+
+    override fun onCancel(p0: Any) {
+    }
+  }
+
+
+
 }
