@@ -2,9 +2,12 @@
 import 'ble_bonding_platform_interface.dart';
 
 enum BleBondingState {
-  none,
-  bonding,
-  bonded,
+  none(10),
+  bonding(11),
+  bonded(12);
+
+  const BleBondingState(this.value);
+  final int value;
 }
 
 class BleBonding {
@@ -13,6 +16,7 @@ class BleBonding {
   }
 
   Stream<BleBondingState> getBondingStateStream(String address) async* {
+    // TODO implement
     var localState = tmpState;
     yield localState;
     while (localState != BleBondingState.bonded) {
@@ -25,16 +29,15 @@ class BleBonding {
   }
 
   Future<BleBondingState> getBondingState(String address) async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    return tmpState;
+    final maybeBondingState =
+        await BleBondingPlatform.instance.getBondingState(address);
+    return BleBondingState.values
+        .firstWhere((element) => element.value == maybeBondingState);
   }
 
   var tmpState = BleBondingState.none;
 
-  Future<void> bond(String address) async {
-    await Future.delayed(const Duration(seconds: 4));
-    tmpState = BleBondingState.bonding;
-    await Future.delayed(const Duration(seconds: 4));
-    tmpState = BleBondingState.bonded;
+  Future<void> bond(String address) {
+    return BleBondingPlatform.instance.bond(address);
   }
 }

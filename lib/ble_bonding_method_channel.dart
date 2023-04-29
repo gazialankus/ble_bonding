@@ -14,4 +14,9 @@ class MethodChannelBleBonding extends BleBondingPlatform {
     final version = await methodChannel.invokeMethod<String>('getPlatformVersion');
     return version;
   }
+
+  @override
+  Future<void> bond(String address) {
+    return methodChannel.invokeMethod<void>('bond', {'address': address});
+  }
 }
