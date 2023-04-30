@@ -26,8 +26,6 @@ class BleBonding {
         .firstWhere((element) => element.value == maybeBondingState);
   }
 
-  var tmpState = BleBondingState.none;
-
   Future<void> bond(String address) {
     return BleBondingPlatform.instance.bond(address);
   }
