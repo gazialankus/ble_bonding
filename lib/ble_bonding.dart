@@ -11,20 +11,11 @@ enum BleBondingState {
 }
 
 class BleBonding {
-  Future<String?> getPlatformVersion() {
-    return BleBondingPlatform.instance.getPlatformVersion();
-  }
-
   Stream<BleBondingState> getBondingStateStream(String address) async* {
-    // TODO implement
-    var localState = tmpState;
-    yield localState;
-    while (localState != BleBondingState.bonded) {
-      await Future.delayed(const Duration(milliseconds: 100));
-      if (localState != tmpState) {
-        localState = tmpState;
-        yield localState;
-      }
+    await for (final bondingState
+        in BleBondingPlatform.instance.getBondingStateStream(address)) {
+      yield BleBondingState.values
+          .firstWhere((element) => element.value == bondingState);
     }
   }
 

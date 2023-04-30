@@ -21,16 +21,13 @@ import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
 
 /** BleBondingPlugin */
-class BleBondingPlugin: FlutterPlugin, MethodCallHandler, StreamHandler {
-  /// The MethodChannel that will the communication between Flutter and native Android
-  ///
-  /// This local reference serves to register the plugin with the Flutter Engine and unregister it
-  /// when the Flutter Engine is detached from the Activity
+class BleBondingPlugin: FlutterPlugin, MethodCallHandler {
   private lateinit var channel : MethodChannel
   private lateinit var eventChannel: EventChannel
   private lateinit var mBluetoothAdapter: BluetoothAdapter
   private lateinit var applicationContext: Context
   val channelResultForAddress = LinkedHashMap<String, Result>()
+  val eventSinksForAddress = LinkedHashMap<String, MutableList<EventSink>>()
 
   override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
     channel = MethodChannel(flutterPluginBinding.binaryMessenger, "ble_bonding")
@@ -55,10 +52,8 @@ class BleBondingPlugin: FlutterPlugin, MethodCallHandler, StreamHandler {
 
   @RequiresApi(Build.VERSION_CODES.KITKAT)
   override fun onMethodCall(@NonNull call: MethodCall, @NonNull result: Result) {
-    if (call.method == "getPlatformVersion") {
-      result.success("Android ${android.os.Build.VERSION.RELEASE}")
-    } else if (call.method == "bond") {
-      val address = call.argument<String>("address") ?: return
+    if (call.method == "bond") {
+      val address = getMaybeAddressFromArgs(call, result) ?: return
       val device = mBluetoothAdapter.getRemoteDevice(address)
       val started = device.createBond()
 
@@ -72,9 +67,26 @@ class BleBondingPlugin: FlutterPlugin, MethodCallHandler, StreamHandler {
       }
 
       channelResultForAddress[address] = result
+    } else if (call.method == "getBondingState") {
+      val address = getMaybeAddressFromArgs(call, result) ?: return
+
+      val device = mBluetoothAdapter.getRemoteDevice(address)
+
+      result.success(device.bondState)
     } else {
       result.notImplemented()
     }
+  }
+
+  private fun getMaybeAddressFromArgs(
+      call: MethodCall,
+      result: Result
+  ): String? {
+    val address = call.argument<String>("address")
+    if (address == null) {
+      result.error("Invalid address", null, null)
+    }
+    return address
   }
 
   override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
@@ -83,35 +95,43 @@ class BleBondingPlugin: FlutterPlugin, MethodCallHandler, StreamHandler {
 
   private val bondStateReceiver: BroadcastReceiver = object : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-      val action: String? = intent.getAction()
+      val action = intent.action
       if (action.equals(BluetoothDevice.ACTION_BOND_STATE_CHANGED)) {
-        when (intent.getIntExtra(BluetoothDevice.EXTRA_BOND_STATE, BluetoothDevice.ERROR)) {
-          BluetoothDevice.BOND_BONDED -> {
-            //setBonded(true)
-            println("BtleConManager bonded lets make a connection")
-            val device: BluetoothDevice? = intent.getParcelableExtra<BluetoothDevice>(
-              BluetoothDevice.EXTRA_DEVICE
-            )
-            val address = device?.address
-            val result = channelResultForAddress[address]
+        val device: BluetoothDevice? = intent.getParcelableExtra<BluetoothDevice>(
+          BluetoothDevice.EXTRA_DEVICE
+        )
+        val address = device?.address
 
-            if (result == null) {
+        val state = intent.getIntExtra(BluetoothDevice.EXTRA_BOND_STATE, BluetoothDevice.ERROR)
+
+        eventSinksForAddress[address]?.forEach {
+          it.success(state)
+        }
+
+        when (state) {
+          BluetoothDevice.BOND_BONDED -> {
+            print("bonded")
+            val channelResult = channelResultForAddress[address]
+
+            if (channelResult == null) {
               println("Received intent for unexpected device $address")
             } else {
-              result.success(null)
+              channelResult.success(null)
+              channelResultForAddress.remove(address)
             }
           }
-          BluetoothDevice.BOND_BONDING -> println("BtleConManager bonding")
+          BluetoothDevice.BOND_BONDING -> println("bonding")
           BluetoothDevice.BOND_NONE -> {
-            println("BtleConManager unbonded")
-            //setBonded(false)
+            println("none")
             val prevState: Int = intent.getIntExtra(
               BluetoothDevice.EXTRA_PREVIOUS_BOND_STATE,
               BluetoothDevice.ERROR
             )
             if (prevState == BluetoothDevice.BOND_BONDING) {
-              //
+              print("tried and failed")
             }
+
+            eventSinksForAddress.remove(address)
           }
         }
       }
@@ -119,10 +139,37 @@ class BleBondingPlugin: FlutterPlugin, MethodCallHandler, StreamHandler {
   }
 
   private val stateStreamHandler: StreamHandler = object: StreamHandler {
-    override fun onListen(p0: Any?, stateEventSink: EventSink) {
+    override fun onListen(arg: Any?, stateEventSink: EventSink) {
+      val argMap = arg as? Map<*, *>
+
+      if (argMap != null) {
+        val address = argMap["address"]
+        if (address is String) {
+          val sinks = eventSinksForAddress[address] ?: mutableListOf<EventSink>()
+          sinks.add(stateEventSink)
+          eventSinksForAddress[address] = sinks
+        } else {
+          stateEventSink.error("Address must be a String", null, null)
+        }
+      } else {
+        stateEventSink.error("Address is not found", null, null)
+      }
+
     }
 
-    override fun onCancel(p0: Any) {
+    override fun onCancel(arg: Any) {
+      val argMap = arg as? Map<*, *>
+
+      if (argMap != null) {
+        val address = argMap["address"]
+        if (address is String) {
+          val sinks = eventSinksForAddress[address] ?: mutableListOf<EventSink>()
+          // how can you differentiate, they all have the same address...
+          // so, multiple streams listening to it are cleared together here
+          sinks.clear()
+          eventSinksForAddress[address] = sinks;
+        }
+      }
     }
   }
 

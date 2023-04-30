@@ -12,12 +12,6 @@ class MethodChannelBleBonding extends BleBondingPlatform {
   final stateEventChannel = const EventChannel('ble_bonding_state_stream');
 
   @override
-  Future<String?> getPlatformVersion() async {
-    final version = await methodChannel.invokeMethod<String>('getPlatformVersion');
-    return version;
-  }
-
-  @override
   Future<void> bond(String address) {
     return methodChannel.invokeMethod<void>('bond', {'address': address});
   }
@@ -25,5 +19,10 @@ class MethodChannelBleBonding extends BleBondingPlatform {
   @override
   Future<int?> getBondingState(String address) {
     return methodChannel.invokeMethod<int>('getBondingState', {'address': address});
+  }
+
+  @override
+  Stream<int> getBondingStateStream(String address) {
+    return stateEventChannel.receiveBroadcastStream({'address': address}).cast<int>();
   }
 }

@@ -1,3 +1,4 @@
+import 'package:ble_bonding/ble_bonding.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
 import 'ble_bonding_method_channel.dart';
@@ -23,15 +24,15 @@ abstract class BleBondingPlatform extends PlatformInterface {
     _instance = instance;
   }
 
-  Future<String?> getPlatformVersion() {
-    throw UnimplementedError('platformVersion() has not been implemented.');
-  }
-
   Future<void> bond(String address) async {
     throw UnimplementedError('bond() has not been implemented.');
   }
 
   Future<int?> getBondingState(String address) async {
     throw UnimplementedError('getBondingState() has not been implemented.');
+  }
+
+  Stream<int> getBondingStateStream(String address) {
+    throw UnimplementedError('getBondingStateStream() has not been implemented.');
   }
 }
