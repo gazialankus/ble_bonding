@@ -19,6 +19,7 @@ import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
+import java.lang.reflect.Method
 
 /** BleBondingPlugin */
 class BleBondingPlugin: FlutterPlugin, MethodCallHandler {
@@ -73,6 +74,19 @@ class BleBondingPlugin: FlutterPlugin, MethodCallHandler {
       val device = mBluetoothAdapter.getRemoteDevice(address)
 
       result.success(device.bondState)
+    } else if (call.method == "unbound") {
+        val address = getMaybeAddressFromArgs(call, result) ?: return
+
+        val device = mBluetoothAdapter.getRemoteDevice(address)
+
+        try {
+          device::class.java.getMethod("removeBond").invoke(device)
+          result.success(null)
+        } catch (e: Exception) {
+          println("Removing bond failed: ${e.message}")
+          result.error("Removing bond failed", null, null);
+        }
+
     } else {
       result.notImplemented()
     }

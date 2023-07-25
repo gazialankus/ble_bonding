@@ -29,4 +29,8 @@ class BleBonding {
   Future<void> bond(String address) {
     return BleBondingPlatform.instance.bond(address);
   }
+
+  Future<void> unbound(String address) {
+    return BleBondingPlatform.instance.unbound(address);
+  }
 }

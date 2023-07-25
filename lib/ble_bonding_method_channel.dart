@@ -17,6 +17,11 @@ class MethodChannelBleBonding extends BleBondingPlatform {
   }
 
   @override
+  Future<void> unbound(String address) {
+    return methodChannel.invokeMethod<void>('unbound', {'address': address});
+  }
+
+  @override
   Future<int?> getBondingState(String address) {
     return methodChannel.invokeMethod<int>('getBondingState', {'address': address});
   }

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 
-import 'package:flutter/services.dart';
 import 'package:ble_bonding/ble_bonding.dart';
 
 void main() {
@@ -17,6 +16,7 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   final _bleBondingPlugin = BleBonding();
+  final address = 'E2:92:8E:ED:7C:7E';
 
   @override
   void initState() {
@@ -24,7 +24,6 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> bond() async {
-    var address = 'E2:92:8E:ED:7C:7E';
     var done = false;
 
     Future.microtask(() async {
@@ -50,11 +49,50 @@ class _MyAppState extends State<MyApp> {
 
       if (state == BleBondingState.bonded) {
         debugPrint('BONDED, in loop.');
+        done = true;
         break;
       }
 
       if (state == BleBondingState.none) {
         debugPrint('NONE, in loop.');
+        break;
+      }
+
+      await Future.delayed(const Duration(seconds: 1));
+    }
+  }
+
+  Future<void> unbound() async {
+    var done = false;
+
+    Future.microtask(() async {
+      final bondingFuture = _bleBondingPlugin.unbound(address);
+
+      Future.microtask(() async {
+        await for (final state
+            in _bleBondingPlugin.getBondingStateStream(address)) {
+          debugPrint('State is $state, from stream.');
+          if (state == BleBondingState.none) break;
+        }
+        debugPrint('NONE, in stream.');
+      });
+
+      await bondingFuture;
+      debugPrint('NONE, after await.');
+    });
+
+    while (!done) {
+      final state = await _bleBondingPlugin.getBondingState(address);
+      debugPrint('State is $state, in loop.');
+
+      if (state == BleBondingState.bonded) {
+        debugPrint('BONDED, in loop.');
+        break;
+      }
+
+      if (state == BleBondingState.none) {
+        debugPrint('NONE, in loop.');
+        done = true;
         break;
       }
 
@@ -69,10 +107,22 @@ class _MyAppState extends State<MyApp> {
         appBar: AppBar(
           title: const Text('Plugin example app'),
         ),
-        body: Center(
-          child: ElevatedButton(
-            onPressed: bond,
-            child: const Text('Bond'),
+        body: SizedBox(
+          width: double.infinity,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              ElevatedButton(
+                onPressed: bond,
+                child: const Text('Bond'),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: unbound,
+                child: const Text('Unbound'),
+              ),
+            ],
           ),
         ),
       ),
