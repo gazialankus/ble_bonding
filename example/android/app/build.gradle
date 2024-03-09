@@ -60,6 +60,8 @@ android {
             signingConfig signingConfigs.debug
         }
     }
+
+    namespace 'dev.gbot.ble_bonding_example'
 }
 
 flutter {
