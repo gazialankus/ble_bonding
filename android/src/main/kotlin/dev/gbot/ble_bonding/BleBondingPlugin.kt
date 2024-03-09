@@ -1,5 +1,6 @@
 package dev.gbot.ble_bonding
 
+import android.Manifest
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothManager
@@ -7,9 +8,11 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.PackageManager
 import android.os.Build
 import androidx.annotation.NonNull
 import androidx.annotation.RequiresApi
+import androidx.core.app.ActivityCompat
 
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.plugin.common.EventChannel
@@ -88,25 +91,12 @@ class BleBondingPlugin: FlutterPlugin, MethodCallHandler {
         }
 
     } else if(call.method == "getPairedDevices") { // https://github.com/PhilipsHue/flutter_reactive_ble/issues/507#issuecomment-1700480264
-        val bluetoothManager: BluetoothManager = getSystemService(BluetoothManager::class.java)
-        val bluetoothAdapter: BluetoothAdapter? = bluetoothManager.adapter
-        if (bluetoothAdapter == null) {
-            result.notImplemented()
-        }
-        if (ActivityCompat.checkSelfPermission(
-                this,
-                Manifest.permission.BLUETOOTH_CONNECT
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            result.error("Permission missing", "BLUETOOTH_CONNECT not granted", null)
-        } else {
-            val pairedDevices: Set<BluetoothDevice>? = bluetoothAdapter?.bondedDevices
-            val pairedDevicesList: MutableList<String> = ArrayList()
-            pairedDevices?.forEach { device ->
-                pairedDevicesList.add(device.address.toString())
-            }
-            result.success(pairedDevicesList)
-        }
+      val pairedDevices: Set<BluetoothDevice>? = mBluetoothAdapter?.bondedDevices
+      val pairedDevicesList: MutableList<String> = ArrayList()
+      pairedDevices?.forEach { device ->
+        pairedDevicesList.add(device.address.toString())
+      }
+      result.success(pairedDevicesList)
     } else {
       result.notImplemented()
     }

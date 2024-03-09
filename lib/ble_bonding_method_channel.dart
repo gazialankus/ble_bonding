@@ -34,10 +34,10 @@ class MethodChannelBleBonding extends BleBondingPlatform {
   @override
   Future<bool> isPaired(String address) async {
     try {
-      var pairedDevices = await platform.invokeMethod('getPairedDevices');
+      var pairedDevices = await methodChannel.invokeMethod('getPairedDevices');
       print("pairedDevices: $pairedDevices");
       for (String pairedDevice in pairedDevices) {
-        if(pairedDevice == address) {
+        if (pairedDevice == address) {
           return true;
         }
       }
