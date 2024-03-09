@@ -19,6 +19,7 @@ import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
+import java.lang.reflect.Method
 
 /** BleBondingPlugin */
 class BleBondingPlugin: FlutterPlugin, MethodCallHandler {
@@ -73,6 +74,39 @@ class BleBondingPlugin: FlutterPlugin, MethodCallHandler {
       val device = mBluetoothAdapter.getRemoteDevice(address)
 
       result.success(device.bondState)
+    } else if (call.method == "unbound") {
+        val address = getMaybeAddressFromArgs(call, result) ?: return
+
+        val device = mBluetoothAdapter.getRemoteDevice(address)
+
+        try {
+          device::class.java.getMethod("removeBond").invoke(device)
+          result.success(null)
+        } catch (e: Exception) {
+          println("Removing bond failed: ${e.message}")
+          result.error("Removing bond failed", null, null);
+        }
+
+    } else if(call.method == "getPairedDevices") { // https://github.com/PhilipsHue/flutter_reactive_ble/issues/507#issuecomment-1700480264
+        val bluetoothManager: BluetoothManager = getSystemService(BluetoothManager::class.java)
+        val bluetoothAdapter: BluetoothAdapter? = bluetoothManager.adapter
+        if (bluetoothAdapter == null) {
+            result.notImplemented()
+        }
+        if (ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.BLUETOOTH_CONNECT
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            result.error("Permission missing", "BLUETOOTH_CONNECT not granted", null)
+        } else {
+            val pairedDevices: Set<BluetoothDevice>? = bluetoothAdapter?.bondedDevices
+            val pairedDevicesList: MutableList<String> = ArrayList()
+            pairedDevices?.forEach { device ->
+                pairedDevicesList.add(device.address.toString())
+            }
+            result.success(pairedDevicesList)
+        }
     } else {
       result.notImplemented()
     }

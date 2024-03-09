@@ -17,6 +17,11 @@ class MethodChannelBleBonding extends BleBondingPlatform {
   }
 
   @override
+  Future<void> unbound(String address) {
+    return methodChannel.invokeMethod<void>('unbound', {'address': address});
+  }
+
+  @override
   Future<int?> getBondingState(String address) {
     return methodChannel.invokeMethod<int>('getBondingState', {'address': address});
   }
@@ -25,4 +30,21 @@ class MethodChannelBleBonding extends BleBondingPlatform {
   Stream<int> getBondingStateStream(String address) {
     return stateEventChannel.receiveBroadcastStream({'address': address}).cast<int>();
   }
+
+  @override
+  Future<bool> isPaired(String address) async {
+    try {
+      var pairedDevices = await platform.invokeMethod('getPairedDevices');
+      print("pairedDevices: $pairedDevices");
+      for (String pairedDevice in pairedDevices) {
+        if(pairedDevice == address) {
+          return true;
+        }
+      }
+    } on PlatformException catch (e) {
+      print('PlatformException: ${e.code} ${e.message}');
+    }
+    return false;
+  }
+
 }

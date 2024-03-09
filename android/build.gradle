@@ -43,4 +43,7 @@ android {
     defaultConfig {
         minSdkVersion 16
     }
+
+    namespace 'dev.gbot.ble_bonding'
+
 }

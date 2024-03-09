@@ -29,4 +29,12 @@ class BleBonding {
   Future<void> bond(String address) {
     return BleBondingPlatform.instance.bond(address);
   }
+
+  Future<void> unbound(String address) {
+    return BleBondingPlatform.instance.unbound(address);
+  }
+
+  Future<bool> isPaired(String address) {
+    return BleBondingPlatform.instance.isPaired(address);
+  }
 }
